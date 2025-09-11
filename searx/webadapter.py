@@ -7,7 +7,7 @@ from searx.exceptions import SearxParameterException
 from searx.webutils import VALID_LANGUAGE_CODE
 from searx.query import RawTextQuery
 from searx.engines import categories, engines
-from searx.search import SearchQuery, EngineRef
+from searx.search.models import SearchQuery, EngineRef
 from searx.preferences import Preferences, is_locked
 from searx.utils import detect_language
 
@@ -225,7 +225,7 @@ def get_search_query_from_webapp(
     """Assemble data from preferences and request.form (from the HTML form) needed
     in a search query.
 
-    The returned tuple consits of:
+    The returned tuple consists of:
 
     1. instance of :py:obj:`searx.search.SearchQuery`
     2. instance of :py:obj:`searx.query.RawTextQuery`

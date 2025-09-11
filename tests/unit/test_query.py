@@ -1,24 +1,13 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring,disable=missing-class-docstring,invalid-name
 
-from searx.engines import load_engines
+from parameterized.parameterized import parameterized
 from searx.query import RawTextQuery
 from tests import SearxTestCase
 
 
-TEST_ENGINES = [
-    {
-        'name': 'dummy engine',
-        'engine': 'dummy',
-        'categories': 'general',
-        'shortcut': 'du',
-        'timeout': 3.0,
-        'tokens': [],
-    },
-]
+class TestQuery(SearxTestCase):
 
-
-class TestQuery(SearxTestCase):  # pylint:disable=missing-class-docstring
     def test_simple_query(self):
         query_text = 'the query'
         query = RawTextQuery(query_text, [])
@@ -58,7 +47,8 @@ class TestQuery(SearxTestCase):  # pylint:disable=missing-class-docstring
         self.assertEqual(query.getFullQuery(), '<8 another text')
 
 
-class TestLanguageParser(SearxTestCase):  # pylint:disable=missing-class-docstring
+class TestLanguageParser(SearxTestCase):
+
     def test_language_code(self):
         language = 'es-ES'
         query_text = 'the query'
@@ -129,49 +119,33 @@ class TestLanguageParser(SearxTestCase):  # pylint:disable=missing-class-docstri
         query = RawTextQuery(query_text, [])
         self.assertEqual(query.autocomplete_list, [":en", ":en_us", ":english", ":united_kingdom"])
 
-    def test_autocomplete(self):
-        query = RawTextQuery(':englis', [])
-        self.assertEqual(query.autocomplete_list, [":english"])
-
-        query = RawTextQuery(':deutschla', [])
-        self.assertEqual(query.autocomplete_list, [":deutschland"])
-
-        query = RawTextQuery(':new_zea', [])
-        self.assertEqual(query.autocomplete_list, [":new_zealand"])
-
-        query = RawTextQuery(':hu-H', [])
-        self.assertEqual(query.autocomplete_list, [":hu-hu"])
-
-        query = RawTextQuery(':zh-', [])
-        self.assertEqual(query.autocomplete_list, [':zh-cn', ':zh-hk', ':zh-tw'])
+    @parameterized.expand(
+        [
+            (':englis', [":english"]),
+            (':deutschla', [":deutschland"]),
+            (':new_zea', [":new_zealand"]),
+            (':zh-', [':zh-cn', ':zh-hk', ':zh-tw']),
+        ]
+    )
+    def test_autocomplete(self, query: str, autocomplete_list: list):
+        query = RawTextQuery(query, [])
+        self.assertEqual(query.autocomplete_list, autocomplete_list)
 
 
-class TestTimeoutParser(SearxTestCase):  # pylint:disable=missing-class-docstring
-    def test_timeout_below100(self):
-        query_text = '<3 the query'
+class TestTimeoutParser(SearxTestCase):
+
+    @parameterized.expand(
+        [
+            ('<3 the query', 3),
+            ('<350 the query', 0.35),
+            ('<3500 the query', 3.5),
+        ]
+    )
+    def test_timeout_limit(self, query_text: str, timeout_limit: float):
         query = RawTextQuery(query_text, [])
-
         self.assertEqual(query.getFullQuery(), query_text)
         self.assertEqual(len(query.query_parts), 1)
-        self.assertEqual(query.timeout_limit, 3)
-        self.assertFalse(query.specific)
-
-    def test_timeout_above100(self):
-        query_text = '<350 the query'
-        query = RawTextQuery(query_text, [])
-
-        self.assertEqual(query.getFullQuery(), query_text)
-        self.assertEqual(len(query.query_parts), 1)
-        self.assertEqual(query.timeout_limit, 0.35)
-        self.assertFalse(query.specific)
-
-    def test_timeout_above1000(self):
-        query_text = '<3500 the query'
-        query = RawTextQuery(query_text, [])
-
-        self.assertEqual(query.getFullQuery(), query_text)
-        self.assertEqual(len(query.query_parts), 1)
-        self.assertEqual(query.timeout_limit, 3.5)
+        self.assertEqual(query.timeout_limit, timeout_limit)
         self.assertFalse(query.specific)
 
     def test_timeout_invalid(self):
@@ -182,7 +156,7 @@ class TestTimeoutParser(SearxTestCase):  # pylint:disable=missing-class-docstrin
         self.assertEqual(query.getFullQuery(), query_text)
         self.assertEqual(len(query.query_parts), 0)
         self.assertEqual(query.getQuery(), query_text)
-        self.assertEqual(query.timeout_limit, None)
+        self.assertIsNone(query.timeout_limit)
         self.assertFalse(query.specific)
 
     def test_timeout_autocomplete(self):
@@ -193,12 +167,13 @@ class TestTimeoutParser(SearxTestCase):  # pylint:disable=missing-class-docstrin
         self.assertEqual(query.getFullQuery(), query_text)
         self.assertEqual(len(query.query_parts), 0)
         self.assertEqual(query.getQuery(), query_text)
-        self.assertEqual(query.timeout_limit, None)
+        self.assertIsNone(query.timeout_limit)
         self.assertFalse(query.specific)
         self.assertEqual(query.autocomplete_list, ['<3', '<850'])
 
 
-class TestExternalBangParser(SearxTestCase):  # pylint:disable=missing-class-docstring
+class TestExternalBangParser(SearxTestCase):
+
     def test_external_bang(self):
         query_text = '!!ddg the query'
         query = RawTextQuery(query_text, [])
@@ -212,7 +187,7 @@ class TestExternalBangParser(SearxTestCase):  # pylint:disable=missing-class-doc
         query = RawTextQuery(query_text, [])
 
         self.assertEqual(query.getFullQuery(), query_text)
-        self.assertEqual(query.external_bang, None)
+        self.assertIsNone(query.external_bang)
         self.assertFalse(query.specific)
 
     def test_external_bang_autocomplete(self):
@@ -228,34 +203,27 @@ class TestExternalBangParser(SearxTestCase):  # pylint:disable=missing-class-doc
         self.assertEqual(query.get_autocomplete_full_query(a), a + ' the query')
 
 
-class TestBang(SearxTestCase):  # pylint:disable=missing-class-docstring
+class TestBang(SearxTestCase):
 
-    SPECIFIC_BANGS = ['!dummy_engine', '!du', '!general']
+    SPECIFIC_BANGS = ['!dummy_engine', '!gd', '!general']
     THE_QUERY = 'the query'
 
-    def setUp(self):
-        load_engines(TEST_ENGINES)
+    @parameterized.expand(SPECIFIC_BANGS)
+    def test_bang(self, bang: str):
+        with self.subTest(msg="Check bang", bang=bang):
+            query_text = TestBang.THE_QUERY + ' ' + bang
+            query = RawTextQuery(query_text, [])
 
-    def tearDown(self):
-        load_engines([])
+            self.assertEqual(query.getFullQuery(), bang + ' ' + TestBang.THE_QUERY)
+            self.assertEqual(query.query_parts, [bang])
+            self.assertEqual(query.user_query_parts, TestBang.THE_QUERY.split(' '))
 
-    def test_bang(self):
-
-        for bang in TestBang.SPECIFIC_BANGS:
-            with self.subTest(msg="Check bang", bang=bang):
-                query_text = TestBang.THE_QUERY + ' ' + bang
-                query = RawTextQuery(query_text, [])
-
-                self.assertEqual(query.getFullQuery(), bang + ' ' + TestBang.THE_QUERY)
-                self.assertEqual(query.query_parts, [bang])
-                self.assertEqual(query.user_query_parts, TestBang.THE_QUERY.split(' '))
-
-    def test_specific(self):
-        for bang in TestBang.SPECIFIC_BANGS:
-            with self.subTest(msg="Check bang is specific", bang=bang):
-                query_text = TestBang.THE_QUERY + ' ' + bang
-                query = RawTextQuery(query_text, [])
-                self.assertTrue(query.specific)
+    @parameterized.expand(SPECIFIC_BANGS)
+    def test_specific(self, bang: str):
+        with self.subTest(msg="Check bang is specific", bang=bang):
+            query_text = TestBang.THE_QUERY + ' ' + bang
+            query = RawTextQuery(query_text, [])
+            self.assertTrue(query.specific)
 
     def test_bang_not_found(self):
         query = RawTextQuery('the query !bang_not_found', [])
@@ -263,7 +231,7 @@ class TestBang(SearxTestCase):  # pylint:disable=missing-class-docstring
 
     def test_bang_autocomplete(self):
         query = RawTextQuery('the query !dum', [])
-        self.assertEqual(query.autocomplete_list, ['!dummy_engine'])
+        self.assertEqual(query.autocomplete_list, ['!dummy_engine', '!dummy_private_engine'])
 
         query = RawTextQuery('!dum the query', [])
         self.assertEqual(query.autocomplete_list, [])

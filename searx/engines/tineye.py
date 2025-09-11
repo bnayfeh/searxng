@@ -14,15 +14,11 @@ billion images `[tineye.com] <https://tineye.com/how>`_.
 
 """
 
-from typing import TYPE_CHECKING
 from urllib.parse import urlencode
 from datetime import datetime
 from flask_babel import gettext
 
-if TYPE_CHECKING:
-    import logging
-
-    logger = logging.getLogger()
+from searx.result_types import EngineResults
 
 about = {
     "website": 'https://tineye.com',
@@ -154,8 +150,9 @@ def parse_tineye_match(match_json):
     }
 
 
-def response(resp):
+def response(resp) -> EngineResults:
     """Parse HTTP response from TinEye."""
+    results = EngineResults()
 
     # handle the 422 client side errors, and the possible 400 status code error
     if resp.status_code in (400, 422):
@@ -182,14 +179,13 @@ def response(resp):
                 message = ','.join(description)
 
         # see https://github.com/searxng/searxng/pull/1456#issuecomment-1193105023
-        # results.append({'answer': message})
-        logger.error(message)
-        return []
+        # results.add(results.types.Answer(answer=message))
+        logger.info(message)
+        return results
 
     # Raise for all other responses
     resp.raise_for_status()
 
-    results = []
     json_data = resp.json()
 
     for match_json in json_data['matches']:
@@ -208,7 +204,7 @@ def response(resp):
                 'title': backlink['image_name'],
                 'img_src': backlink['url'],
                 'format': tineye_match['image_format'],
-                'widht': tineye_match['width'],
+                'width': tineye_match['width'],
                 'height': tineye_match['height'],
                 'publishedDate': backlink['crawl_date'],
             }

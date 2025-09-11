@@ -14,8 +14,6 @@ from searx.network import get
 from searx.locales import language_tag
 from searx.enginelib.traits import EngineTraits
 
-traits: EngineTraits
-
 # Engine metadata
 about = {
     "website": "https://odysee.com/",
@@ -88,7 +86,7 @@ def response(resp):
         duration = item["duration"]
 
         release_date = datetime.strptime(release_time.split("T")[0], "%Y-%m-%d")
-        formatted_date = datetime.utcfromtimestamp(release_date.timestamp())
+        formatted_date = datetime.fromtimestamp(release_date.timestamp())
 
         url = f"https://odysee.com/{name}:{claim_id}"
         iframe_url = f"https://odysee.com/$/embed/{name}:{claim_id}"

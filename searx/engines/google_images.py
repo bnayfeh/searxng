@@ -13,8 +13,6 @@ This internal API offer results in
 .. _Protobuf: https://en.wikipedia.org/wiki/Protocol_Buffers
 """
 
-from typing import TYPE_CHECKING
-
 from urllib.parse import urlencode
 from json import loads
 
@@ -24,14 +22,6 @@ from searx.engines.google import (
     time_range_dict,
     detect_google_sorry,
 )
-
-if TYPE_CHECKING:
-    import logging
-    from searx.enginelib.traits import EngineTraits
-
-    logger: logging.Logger
-    traits: EngineTraits
-
 
 # about
 about = {
@@ -47,6 +37,11 @@ about = {
 categories = ['images', 'web']
 paging = True
 max_page = 50
+"""`Google max 50 pages`_
+
+.. _Google max 50 pages: https://github.com/searxng/searxng/issues/2982
+"""
+
 time_range_support = True
 safesearch = True
 send_accept_language_header = True

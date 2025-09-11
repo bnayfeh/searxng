@@ -17,7 +17,7 @@ The engine has the following additional settings:
 - :py:obj:`qwant_categ`
 
 This implementation is used by different qwant engines in the :ref:`settings.yml
-<settings engine>`:
+<settings engines>`:
 
 .. code:: yaml
 
@@ -49,7 +49,11 @@ from flask_babel import gettext
 import babel
 import lxml
 
-from searx.exceptions import SearxEngineAPIException, SearxEngineTooManyRequestsException
+from searx.exceptions import (
+    SearxEngineAPIException,
+    SearxEngineTooManyRequestsException,
+    SearxEngineCaptchaException,
+)
 from searx.network import raise_for_httperror
 from searx.enginelib.traits import EngineTraits
 
@@ -57,9 +61,8 @@ from searx.utils import (
     eval_xpath,
     eval_xpath_list,
     extract_text,
+    get_embeded_stream_url,
 )
-
-traits: EngineTraits
 
 # about
 about = {
@@ -130,6 +133,7 @@ def request(query, params):
         args['locale'] = q_locale
         args['safesearch'] = params['safesearch']
         args['count'] = 50
+        args['tgp'] = 3
         args['offset'] = (params['pageno'] - 1) * args['count']
 
     else:  # web, news, videos
@@ -137,6 +141,8 @@ def request(query, params):
         args['locale'] = q_locale
         args['safesearch'] = params['safesearch']
         args['count'] = 10
+        args['llm'] = 'false'
+        args['tgp'] = 3
         args['offset'] = (params['pageno'] - 1) * args['count']
 
     params['url'] = url + urlencode(args)
@@ -187,6 +193,8 @@ def parse_web_api(resp):
         error_code = data.get('error_code')
         if error_code == 24:
             raise SearxEngineTooManyRequestsException()
+        if search_results.get("data", {}).get("error_data", {}).get("captchaUrl") is not None:
+            raise SearxEngineCaptchaException()
         msg = ",".join(data.get('message', ['unknown']))
         raise SearxEngineAPIException(f"{msg} ({error_code})")
 
@@ -297,6 +305,7 @@ def parse_web_api(resp):
                         'title': title,
                         'url': res_url,
                         'content': content,
+                        'iframe_src': get_embeded_stream_url(res_url),
                         'publishedDate': pub_date,
                         'thumbnail': thumbnail,
                         'template': 'videos.html',

@@ -7,9 +7,6 @@ can make use of the :ref:`google API` to assemble the arguments of the GET
 request.
 """
 
-from typing import TYPE_CHECKING
-from typing import Optional
-
 from urllib.parse import urlencode
 from datetime import datetime
 from lxml import html
@@ -28,14 +25,6 @@ from searx.engines.google import (
     get_google_info,
     time_range_dict,
 )
-from searx.enginelib.traits import EngineTraits
-
-if TYPE_CHECKING:
-    import logging
-
-    logger: logging.Logger
-
-traits: EngineTraits
 
 # about
 about = {
@@ -51,6 +40,10 @@ about = {
 categories = ['science', 'scientific publications']
 paging = True
 max_page = 50
+"""`Google max 50 pages`_
+
+.. _Google max 50 pages: https://github.com/searxng/searxng/issues/2982
+"""
 language_support = True
 time_range_support = True
 safesearch = False
@@ -111,7 +104,7 @@ def request(query, params):
     return params
 
 
-def parse_gs_a(text: Optional[str]):
+def parse_gs_a(text: str | None):
     """Parse the text written in green.
 
     Possible formats:
